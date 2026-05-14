@@ -45,6 +45,24 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       contact_identity: {
         Row: {
           canonical_phone: string | null
@@ -130,6 +148,35 @@ export type Database = {
           },
         ]
       }
+      departamentos: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'departamentos_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'clientes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       import_jobs: {
         Row: {
           created_at: string | null
@@ -199,6 +246,57 @@ export type Database = {
         }
         Relationships: []
       }
+      ligacoes: {
+        Row: {
+          aparelho: string | null
+          cliente_id: string
+          created_at: string
+          data: string
+          departamento_id: string
+          duracao: string | null
+          hora: string
+          id: string
+          pessoa_que_ligou: string | null
+        }
+        Insert: {
+          aparelho?: string | null
+          cliente_id: string
+          created_at?: string
+          data: string
+          departamento_id: string
+          duracao?: string | null
+          hora: string
+          id?: string
+          pessoa_que_ligou?: string | null
+        }
+        Update: {
+          aparelho?: string | null
+          cliente_id?: string
+          created_at?: string
+          data?: string
+          departamento_id?: string
+          duracao?: string | null
+          hora?: string
+          id?: string
+          pessoa_que_ligou?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ligacoes_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'clientes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ligacoes_departamento_id_fkey'
+            columns: ['departamento_id']
+            isOneToOne: false
+            referencedRelation: 'departamentos'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -265,29 +363,43 @@ export type Database = {
       usuarios: {
         Row: {
           cargo: string | null
+          cliente_id: string | null
           created_at: string
           email: string | null
           id: string
           nome: string | null
           permissoes: Json | null
+          tipo: string | null
         }
         Insert: {
           cargo?: string | null
+          cliente_id?: string | null
           created_at?: string
           email?: string | null
           id: string
           nome?: string | null
           permissoes?: Json | null
+          tipo?: string | null
         }
         Update: {
           cargo?: string | null
+          cliente_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
           nome?: string | null
           permissoes?: Json | null
+          tipo?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'usuarios_cliente_id_fkey'
+            columns: ['cliente_id']
+            isOneToOne: false
+            referencedRelation: 'clientes'
+            referencedColumns: ['id']
+          },
+        ]
       }
       whatsapp_contacts: {
         Row: {
@@ -556,6 +668,10 @@ export const Constants = {
 //   is_active: boolean (nullable, default: false)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   updated_at: timestamp with time zone (nullable, default: now())
+// Table: clientes
+//   id: uuid (not null, default: gen_random_uuid())
+//   nome: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: contact_identity
 //   id: uuid (not null, default: gen_random_uuid())
 //   instance_id: uuid (not null)
@@ -575,6 +691,11 @@ export const Constants = {
 //   resultado: text (nullable)
 //   user_id: uuid (not null)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: departamentos
+//   id: uuid (not null, default: gen_random_uuid())
+//   nome: text (not null)
+//   cliente_id: uuid (not null)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: import_jobs
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)
@@ -593,6 +714,16 @@ export const Constants = {
 //   data_ultimo_contato: timestamp with time zone (nullable)
 //   estagio: text (not null, default: 'todo'::text)
 //   user_id: uuid (not null)
+//   created_at: timestamp with time zone (not null, default: now())
+// Table: ligacoes
+//   id: uuid (not null, default: gen_random_uuid())
+//   cliente_id: uuid (not null)
+//   departamento_id: uuid (not null)
+//   data: date (not null)
+//   hora: time without time zone (not null)
+//   pessoa_que_ligou: text (nullable)
+//   aparelho: text (nullable)
+//   duracao: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 // Table: profiles
 //   id: uuid (not null)
@@ -618,6 +749,8 @@ export const Constants = {
 //   cargo: text (nullable)
 //   permissoes: jsonb (nullable, default: '[]'::jsonb)
 //   created_at: timestamp with time zone (not null, default: now())
+//   tipo: text (nullable, default: 'usuario'::text)
+//   cliente_id: uuid (nullable)
 // Table: whatsapp_contacts
 //   id: uuid (not null, default: gen_random_uuid())
 //   user_id: uuid (not null)
@@ -648,6 +781,8 @@ export const Constants = {
 // Table: ai_agents
 //   PRIMARY KEY ai_agents_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY ai_agents_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: clientes
+//   PRIMARY KEY clientes_pkey: PRIMARY KEY (id)
 // Table: contact_identity
 //   FOREIGN KEY contact_identity_instance_id_fkey: FOREIGN KEY (instance_id) REFERENCES user_integrations(id) ON DELETE CASCADE
 //   PRIMARY KEY contact_identity_pkey: PRIMARY KEY (id)
@@ -656,12 +791,19 @@ export const Constants = {
 //   FOREIGN KEY contatos_lead_id_fkey: FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
 //   PRIMARY KEY contatos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY contatos_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: departamentos
+//   FOREIGN KEY departamentos_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   PRIMARY KEY departamentos_pkey: PRIMARY KEY (id)
 // Table: import_jobs
 //   PRIMARY KEY import_jobs_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY import_jobs_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: leads
 //   PRIMARY KEY leads_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY leads_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: ligacoes
+//   FOREIGN KEY ligacoes_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+//   FOREIGN KEY ligacoes_departamento_id_fkey: FOREIGN KEY (departamento_id) REFERENCES departamentos(id) ON DELETE CASCADE
+//   PRIMARY KEY ligacoes_pkey: PRIMARY KEY (id)
 // Table: profiles
 //   FOREIGN KEY profiles_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY profiles_pkey: PRIMARY KEY (id)
@@ -670,6 +812,7 @@ export const Constants = {
 //   FOREIGN KEY user_integrations_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   UNIQUE user_integrations_user_id_key: UNIQUE (user_id)
 // Table: usuarios
+//   FOREIGN KEY usuarios_cliente_id_fkey: FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE SET NULL
 //   FOREIGN KEY usuarios_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
 // Table: whatsapp_contacts
@@ -687,6 +830,11 @@ export const Constants = {
 // Table: ai_agents
 //   Policy "Users can manage their own AI agents" (ALL, PERMISSIVE) roles={public}
 //     USING: (auth.uid() = user_id)
+// Table: clientes
+//   Policy "admin_all_clientes" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM usuarios   WHERE ((usuarios.id = auth.uid()) AND (usuarios.tipo = 'admin'::text))))
+//   Policy "user_own_cliente" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM usuarios   WHERE ((usuarios.id = auth.uid()) AND (usuarios.cliente_id = clientes.id))))
 // Table: contact_identity
 //   Policy "Users can manage their own contact identities" (ALL, PERMISSIVE) roles={public}
 //     USING: (auth.uid() = user_id)
@@ -700,6 +848,11 @@ export const Constants = {
 //   Policy "authenticated_update_contatos" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
 //     WITH CHECK: (auth.uid() = user_id)
+// Table: departamentos
+//   Policy "admin_all_departamentos" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM usuarios   WHERE ((usuarios.id = auth.uid()) AND (usuarios.tipo = 'admin'::text))))
+//   Policy "user_own_departamento" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM usuarios   WHERE ((usuarios.id = auth.uid()) AND (usuarios.cliente_id = departamentos.cliente_id))))
 // Table: import_jobs
 //   Policy "Users can manage their own import jobs" (ALL, PERMISSIVE) roles={public}
 //     USING: (auth.uid() = user_id)
@@ -713,6 +866,11 @@ export const Constants = {
 //   Policy "authenticated_update_leads" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (auth.uid() = user_id)
 //     WITH CHECK: (auth.uid() = user_id)
+// Table: ligacoes
+//   Policy "admin_all_ligacoes" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM usuarios   WHERE ((usuarios.id = auth.uid()) AND (usuarios.tipo = 'admin'::text))))
+//   Policy "user_own_ligacoes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM usuarios   WHERE ((usuarios.id = auth.uid()) AND (usuarios.cliente_id = ligacoes.cliente_id))))
 // Table: profiles
 //   Policy "Users can insert own profile" (INSERT, PERMISSIVE) roles={authenticated}
 //     WITH CHECK: (auth.uid() = id)
