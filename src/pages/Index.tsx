@@ -3,7 +3,7 @@ import { format, isSameDay, startOfDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useDashboard } from '@/contexts/dashboard-context'
 import { useToast } from '@/hooks/use-toast'
-import { generateMockData, CallRecord, clients, devices } from '@/data/mock'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -36,8 +36,20 @@ import {
   Clock,
 } from 'lucide-react'
 
+export interface CallRecord {
+  id: string
+  date: Date
+  time: string
+  client: string
+  department: string
+  device: string
+  duration: string
+}
+
 export default function Index() {
   const [data, setData] = useState<CallRecord[]>([])
+  const [clients, setClients] = useState<string[]>([])
+  const [devices, setDevices] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const { isRefreshing, setRefreshing } = useDashboard()
@@ -48,22 +60,53 @@ export default function Index() {
   const [dateStart, setDateStart] = useState<Date | undefined>()
   const [dateEnd, setDateEnd] = useState<Date | undefined>()
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true)
     setHasError(false)
 
-    setTimeout(() => {
-      // Simulate 5% chance of error
-      if (Math.random() < 0.05) {
-        setHasError(true)
-        setLoading(false)
-        if (isRefreshing) setRefreshing(false)
-        return
+    try {
+      const { data: ligacoesData, error } = await supabase
+        .from('ligacoes')
+        .select(`
+          id,
+          data,
+          hora,
+          aparelho,
+          duracao,
+          clientes ( nome ),
+          departamentos ( nome )
+        `)
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false })
+
+      if (error) throw error
+
+      if (ligacoesData) {
+        const formattedData: CallRecord[] = ligacoesData.map((item: any) => ({
+          id: item.id,
+          date: new Date(item.data + 'T00:00:00'),
+          time: item.hora.substring(0, 5),
+          client: item.clientes?.nome || 'Desconhecido',
+          department: item.departamentos?.nome || 'N/A',
+          device: item.aparelho || 'Desconhecido',
+          duration: item.duracao || '00:00',
+        }))
+
+        setData(formattedData)
+
+        const uniqueClients = Array.from(new Set(formattedData.map((d) => d.client))).sort()
+        const uniqueDevices = Array.from(new Set(formattedData.map((d) => d.device))).sort()
+
+        setClients(uniqueClients)
+        setDevices(uniqueDevices)
+      } else {
+        setData([])
       }
-
-      setData(generateMockData())
+    } catch (err) {
+      console.error(err)
+      setHasError(true)
+    } finally {
       setLoading(false)
-
       if (isRefreshing) {
         setRefreshing(false)
         toast({
@@ -72,7 +115,7 @@ export default function Index() {
           className: 'border-emerald-500 bg-emerald-50 text-emerald-900',
         })
       }
-    }, 1500)
+    }
   }
 
   useEffect(() => {

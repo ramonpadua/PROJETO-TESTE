@@ -1,0 +1,14 @@
+{
+  "_versions": {
+    "create-user": 16,
+    "ai-classify-contacts": 5,
+    "ai-pipeline-monitor": 5,
+    "evolution-create-instance": 5,
+    "evolution-disconnect": 5,
+    "evolution-get-qr": 5,
+    "evolution-send-message": 5,
+    "evolution-sync-contacts": 5,
+    "evolution-sync-messages": 5,
+    "evolution-webhook": 5
+  }
+}

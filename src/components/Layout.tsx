@@ -16,11 +16,22 @@ import {
 } from '@/components/ui/sidebar'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useDashboard } from '@/contexts/dashboard-context'
+import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
+import { LogOut } from 'lucide-react'
 
 export default function DashboardLayout() {
   const location = useLocation()
   const { isRefreshing, triggerRefresh } = useDashboard()
+  const { userProfile, signOut } = useAuth()
+
+  const handleLogout = async () => {
+    await signOut()
+  }
+
+  const userName = userProfile?.nome || 'Usuário'
+  const userRole = userProfile?.tipo === 'admin' ? 'Administrador' : 'Gestor'
+  const initials = userName.substring(0, 2).toUpperCase()
 
   return (
     <SidebarProvider>
@@ -98,12 +109,23 @@ export default function DashboardLayout() {
             </Button>
             <div className="flex items-center gap-3 border-l pl-3 md:pl-4 md:ml-2">
               <div className="hidden flex-col items-end md:flex">
-                <span className="text-sm font-medium text-slate-800">Gestor Logado</span>
-                <span className="text-xs text-slate-500">Administrador</span>
+                <span className="text-sm font-medium text-slate-800">{userName}</span>
+                <span className="text-xs text-slate-500">{userRole}</span>
               </div>
               <Avatar className="h-9 w-9 border border-slate-200 shadow-sm">
-                <AvatarFallback className="bg-blue-50 text-primary font-medium">GL</AvatarFallback>
+                <AvatarFallback className="bg-blue-50 text-primary font-medium">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="ml-1 text-slate-500 hover:text-red-600 hover:bg-red-50"
+                title="Sair"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </header>
