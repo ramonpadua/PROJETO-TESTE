@@ -165,22 +165,30 @@ export default function Index() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="hover:-translate-y-1 transition-transform duration-200 border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="hover:-translate-y-1 transition-transform duration-200 border-slate-200 shadow-sm relative overflow-hidden group bg-white">
+          <div className="absolute inset-y-0 right-0 w-32 sm:w-48 pointer-events-none transition-transform duration-500 group-hover:scale-105">
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+            <img
+              src="https://img.usecurling.com/p/400/400?q=telephone&color=gray"
+              alt="Telephone"
+              className="w-full h-full object-cover object-right opacity-30 group-hover:opacity-40 transition-opacity duration-500 grayscale"
+            />
+          </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-20">
             <CardTitle className="text-sm font-semibold text-slate-600">
               Total de Ligações Hoje
             </CardTitle>
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Phone className="h-4 w-4 text-primary" />
+            <div className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center border border-slate-100 shadow-sm text-primary">
+              <Phone className="h-4 w-4" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative z-20">
             {loading || isRefreshing ? (
-              <Skeleton className="h-8 w-16 mb-1" />
+              <Skeleton className="h-8 w-16 mb-1 bg-slate-200/50" />
             ) : (
-              <div className="text-3xl font-bold text-slate-800">{todayCalls}</div>
+              <div className="text-3xl font-bold text-slate-800 drop-shadow-sm">{todayCalls}</div>
             )}
-            <p className="text-xs text-slate-500 mt-1">Registradas no dia atual</p>
+            <p className="text-xs text-slate-500 mt-1 font-medium">Registradas no dia atual</p>
           </CardContent>
         </Card>
 
