@@ -13,10 +13,14 @@ export const getLatestLotteryResults = async () => {
 }
 
 export const triggerLotteryFetch = async () => {
+  const token = pb.authStore.token
+  if (!token) {
+    throw new Error('Usuário não autenticado. O token de autorização está ausente.')
+  }
   return await pb.send('/backend/v1/lottery/fetch', {
     method: 'POST',
     headers: {
-      Authorization: pb.authStore.token,
+      Authorization: token,
     },
   })
 }

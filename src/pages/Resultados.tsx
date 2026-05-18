@@ -43,7 +43,14 @@ const LoteriaCard = ({ loteriaKey, data }: { loteriaKey: string; data: any }) =>
     color: 'text-white',
     bgColor: 'bg-slate-700',
   }
-  const { concurso, data: dataSorteio, premio, acumulou, proximo_premio, dezenas } = data
+  const {
+    numero_concurso,
+    data_sorteio,
+    valor_premio_principal,
+    acumulou,
+    valor_estimado_proximo,
+    numeros_sorteados,
+  } = data
 
   return (
     <Card className="flex flex-col overflow-hidden shadow-sm hover:shadow transition-shadow">
@@ -52,11 +59,11 @@ const LoteriaCard = ({ loteriaKey, data }: { loteriaKey: string; data: any }) =>
         style={{ backgroundColor: meta.bgColor }}
       >
         <h3 className="font-bold text-lg">{meta.name}</h3>
-        <span className="text-sm opacity-90 font-medium">Conc. {concurso || '---'}</span>
+        <span className="text-sm opacity-90 font-medium">Conc. {numero_concurso || '---'}</span>
       </div>
       <CardContent className="p-4 flex-1 flex flex-col gap-4 bg-white">
         <div className="flex justify-between items-center text-sm">
-          <span className="text-slate-500 font-medium">Sorteio: {dataSorteio || '---'}</span>
+          <span className="text-slate-500 font-medium">Sorteio: {data_sorteio || '---'}</span>
           {acumulou ? (
             <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
               Acumulou
@@ -67,20 +74,20 @@ const LoteriaCard = ({ loteriaKey, data }: { loteriaKey: string; data: any }) =>
         </div>
 
         {/* Regular Dezenas */}
-        {dezenas && dezenas.length > 0 && (
+        {numeros_sorteados && numeros_sorteados.length > 0 && (
           <div className="flex flex-wrap gap-2 justify-center py-2">
-            {dezenas.map((d: string, i: number) => (
+            {numeros_sorteados.map((d: string, i: number) => (
               <NumberBall key={i} num={d} bg={meta.bgColor} color={meta.color} />
             ))}
           </div>
         )}
 
         {/* Mais Milionária Trevos */}
-        {data.trevos && data.trevos.length > 0 && (
+        {data.trevos_sorteados && data.trevos_sorteados.length > 0 && (
           <div className="flex flex-col items-center gap-1 border-t pt-2">
             <span className="text-xs font-semibold text-slate-500 uppercase">Trevos</span>
             <div className="flex gap-2">
-              {data.trevos.map((t: string, i: number) => (
+              {data.trevos_sorteados.map((t: string, i: number) => (
                 <div
                   key={i}
                   className="w-8 h-8 rounded text-white bg-indigo-600 flex items-center justify-center font-bold text-sm shadow-sm rotate-45"
@@ -93,25 +100,25 @@ const LoteriaCard = ({ loteriaKey, data }: { loteriaKey: string; data: any }) =>
         )}
 
         {/* Dupla Sena */}
-        {data.dezenas_1 && (
+        {data.primeiro_sorteio && (
           <div className="flex flex-col gap-2 py-1">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
                 1º Sorteio
               </Badge>
               <div className="flex flex-wrap gap-1">
-                {data.dezenas_1.map((d: string, i: number) => (
+                {data.primeiro_sorteio.map((d: string, i: number) => (
                   <NumberBall key={i} num={d} bg={meta.bgColor} color={meta.color} />
                 ))}
               </div>
             </div>
-            {data.dezenas_2 && (
+            {data.segundo_sorteio && (
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">
                   2º Sorteio
                 </Badge>
                 <div className="flex flex-wrap gap-1">
-                  {data.dezenas_2.map((d: string, i: number) => (
+                  {data.segundo_sorteio.map((d: string, i: number) => (
                     <NumberBall key={i} num={d} bg={meta.bgColor} color={meta.color} />
                   ))}
                 </div>
@@ -138,19 +145,19 @@ const LoteriaCard = ({ loteriaKey, data }: { loteriaKey: string; data: any }) =>
         )}
 
         {/* Timemania & Dia de Sorte */}
-        {(data.time_coracao || data.mes_sorte) && (
+        {(data.time_coracao || data.mes_da_sorte) && (
           <div className="flex justify-center border-t pt-2">
             <Badge variant="outline" className="font-semibold px-3 py-1 bg-slate-50">
               {data.time_coracao && `Time do Coração: ${data.time_coracao}`}
-              {data.mes_sorte && `Mês da Sorte: ${data.mes_sorte}`}
+              {data.mes_da_sorte && `Mês da Sorte: ${data.mes_da_sorte}`}
             </Badge>
           </div>
         )}
 
         {/* Federal Bilhetes */}
-        {data.bilhetes && data.bilhetes.length > 0 && (
+        {data.bilhetes_premiados && data.bilhetes_premiados.length > 0 && (
           <div className="flex flex-col gap-1 text-sm bg-slate-50 p-2 rounded-md border">
-            {data.bilhetes.map((b: any, i: number) => (
+            {data.bilhetes_premiados.map((b: any, i: number) => (
               <div
                 key={i}
                 className="flex justify-between items-center border-b last:border-0 pb-1 last:pb-0 border-slate-200"
@@ -182,11 +189,15 @@ const LoteriaCard = ({ loteriaKey, data }: { loteriaKey: string; data: any }) =>
         <div className="mt-auto pt-3 border-t border-slate-100 flex flex-col gap-1.5 text-sm">
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Prêmio:</span>
-            <span className="font-semibold text-slate-800">{formatBRL(premio)}</span>
+            <span className="font-semibold text-slate-800">
+              {formatBRL(valor_premio_principal)}
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Próx. Prêmio:</span>
-            <span className="font-semibold text-emerald-700">{formatBRL(proximo_premio)}</span>
+            <span className="font-semibold text-emerald-700">
+              {formatBRL(valor_estimado_proximo)}
+            </span>
           </div>
         </div>
       </CardContent>
