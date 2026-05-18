@@ -1,14 +1,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { User, Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase/client'
+import pb from '@/lib/pocketbase/client'
+import { RecordModel } from 'pocketbase'
 
 interface AuthContextType {
-  user: User | null
-  session: Session | null
+  user: RecordModel | null
+  session: RecordModel | null
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   loading: boolean
-  userProfile: any | null
+  userProfile: RecordModel | null
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -20,65 +20,49 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [userProfile, setUserProfile] = useState<any | null>(null)
+  const [user, setUser] = useState<RecordModel | null>(
+    pb.authStore.isValid ? pb.authStore.record : null,
+  )
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    let mounted = true
+    const unsubscribe = pb.authStore.onChange((_token, record) => {
+      setUser(pb.authStore.isValid ? record : null)
+    })
 
-    const fetchProfile = async (userId: string) => {
-      const { data } = await supabase.from('usuarios').select('*').eq('id', userId).single()
-      if (mounted) setUserProfile(data)
+    if (pb.authStore.isValid) {
+      pb.collection('users')
+        .authRefresh()
+        .catch(() => pb.authStore.clear())
+        .finally(() => setLoading(false))
+    } else {
+      if (pb.authStore.record) pb.authStore.clear()
+      setLoading(false)
     }
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, currentSession) => {
-      setSession(currentSession)
-      setUser(currentSession?.user ?? null)
-
-      if (currentSession?.user) {
-        fetchProfile(currentSession.user.id)
-      } else {
-        setUserProfile(null)
-      }
-      setLoading(false)
-    })
-
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      if (mounted) {
-        setSession(currentSession)
-        setUser(currentSession?.user ?? null)
-        if (currentSession?.user) {
-          fetchProfile(currentSession.user.id).finally(() => {
-            if (mounted) setLoading(false)
-          })
-        } else {
-          setLoading(false)
-        }
-      }
-    })
-
     return () => {
-      mounted = false
-      subscription.unsubscribe()
+      unsubscribe()
     }
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+    try {
+      await pb.collection('users').authWithPassword(email, password)
+      return { error: null }
+    } catch (error) {
+      return { error }
+    }
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    pb.authStore.clear()
+    return { error: null }
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, signIn, signOut, loading, userProfile }}>
+    <AuthContext.Provider
+      value={{ user, session: user, signIn, signOut, loading, userProfile: user }}
+    >
       {children}
     </AuthContext.Provider>
   )

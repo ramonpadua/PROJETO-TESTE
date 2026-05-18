@@ -17,7 +17,7 @@ import { PhoneCall } from 'lucide-react'
 
 export default function Login() {
   const [email, setEmail] = useState('ramon.padua@adapta.org')
-  const [password, setPassword] = useState('Skip@Pass123')
+  const [password, setPassword] = useState('12345678')
   const [loading, setLoading] = useState(false)
   const { signIn, session } = useAuth()
   const navigate = useNavigate()

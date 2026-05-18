@@ -29,8 +29,8 @@ export default function DashboardLayout() {
     await signOut()
   }
 
-  const userName = userProfile?.nome || 'Usuário'
-  const userRole = userProfile?.tipo === 'admin' ? 'Administrador' : 'Gestor'
+  const userName = userProfile?.name || 'Administrador'
+  const userRole = 'Administrador'
   const initials = userName.substring(0, 2).toUpperCase()
 
   return (
