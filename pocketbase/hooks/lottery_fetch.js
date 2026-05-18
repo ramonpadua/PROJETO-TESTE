@@ -2,17 +2,16 @@ routerAdd(
   'POST',
   '/backend/v1/lottery/fetch',
   (e) => {
-    // Integração de Secret para uso em verificação externa (se necessário)
+    // Integração de Secret para uso em verificação externa
     const geminiSecret = $secrets.get('GEMINI_API') || ''
     if (geminiSecret) {
-      $app
-        .logger()
-        .info('GEMINI_API secret read for external verification', 'length', geminiSecret.length)
+      $app.logger().info('GEMINI_API secret read for AI integration', 'length', geminiSecret.length)
+    } else {
+      $app.logger().warn('GEMINI_API secret is not configured')
     }
 
     const systemPrompt = `Você é um Agente de monitoramento de loterias especializado em extrair resultados das loterias da Caixa Econômica Federal do Brasil.
-Sua tarefa é navegar na web (usando suas ferramentas de busca) para encontrar os ÚLTIMOS resultados oficiais (de hoje ou o mais recente) para TODAS as 11 loterias.
-Você DEVE confirmar cada resultado em pelo menos 2 fontes diferentes (ex: site da Caixa e portal de notícias como G1, UOL ou Estadão) para garantir a integridade dos dados antes de incluí-lo.
+Sua tarefa é encontrar os ÚLTIMOS resultados oficiais (de hoje ou o mais recente) para TODAS as 11 loterias.
 
 Retorne APENAS um objeto JSON válido, sem NENHUM texto antes, depois, ou blocos markdown.
 Se um campo não estiver disponível, retorne null. Os valores financeiros devem ser numéricos.
@@ -37,35 +36,88 @@ Estrutura EXATA do JSON:
 }`
 
     try {
-      const reply = $ai.chat({
-        model: 'fast',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content:
-              'Busque os resultados das loterias da Caixa agora e verifique em múltiplas fontes. Retorne apenas o JSON final validado.',
-          },
-        ],
-      })
+      $app.logger().info('Starting lottery fetch processing')
+
+      let reply
+      try {
+        reply = $ai.chat({
+          model: 'fast',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            {
+              role: 'user',
+              content:
+                'Retorne APENAS o JSON final com os resultados mais recentes. Certifique-se de que é um JSON válido.',
+            },
+          ],
+        })
+      } catch (aiErr) {
+        $app.logger().error('AI Request failed', 'error', aiErr.message)
+        return e.json(200, { success: false, error: 'Falha na comunicação com o modelo de IA.' })
+      }
+
+      if (!reply?.choices?.[0]?.message?.content) {
+        $app.logger().warn('Invalid AI response structure')
+        return e.json(200, { success: false, error: 'Resposta inválida da IA.' })
+      }
 
       let jsonStr = reply.choices[0].message.content
       const match = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-      if (match) jsonStr = match[1]
+      if (match) {
+        jsonStr = match[1]
+      }
+      jsonStr = jsonStr.trim()
 
-      const data = JSON.parse(jsonStr.trim())
+      let data
+      try {
+        const firstBrace = jsonStr.indexOf('{')
+        const lastBrace = jsonStr.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace !== -1) {
+          data = JSON.parse(jsonStr.substring(firstBrace, lastBrace + 1))
+        } else {
+          data = JSON.parse(jsonStr)
+        }
+      } catch (parseErr) {
+        $app
+          .logger()
+          .error('Failed to parse AI JSON', 'response', jsonStr, 'error', parseErr.message)
+        return e.json(200, {
+          success: false,
+          error: 'O formato dos dados retornados não pôde ser processado.',
+        })
+      }
+
+      if (!data || !data.loterias) {
+        $app.logger().warn('JSON is missing "loterias" field')
+        return e.json(200, { success: false, error: 'Estrutura de dados incorreta retornada.' })
+      }
+
       const collection = $app.findCollectionByNameOrId('lottery_results')
       const record = new Record(collection)
 
       let d = data.data_consulta || new Date().toISOString().split('T')[0]
-      record.set('data_consulta', d + ' 00:00:00.000Z')
+      if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+        d = d + ' 00:00:00.000Z'
+      } else {
+        try {
+          d = new Date(d).toISOString()
+        } catch (_) {
+          d = new Date().toISOString()
+        }
+      }
+
+      record.set('data_consulta', d)
       record.set('resultados', data)
       $app.save(record)
 
+      $app.logger().info('Lottery results saved successfully', 'recordId', record.id)
       return e.json(200, { success: true, id: record.id })
     } catch (err) {
-      $app.logger().error('Manual lottery fetch failed', 'error', err.message)
-      return e.internalServerError('Falha ao buscar resultados. Tente novamente mais tarde.')
+      $app.logger().error('Unexpected error during lottery fetch', 'error', err.message)
+      return e.json(200, {
+        success: false,
+        error: 'Ocorreu um erro interno durante o processamento. Verifique os logs.',
+      })
     }
   },
   $apis.requireAuth(),

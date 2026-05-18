@@ -25,12 +25,16 @@ export const triggerLotteryFetch = async () => {
     throw new Error('Usuário não autenticado. O token de autorização está ausente.')
   }
   try {
-    return await pb.send('/backend/v1/lottery/fetch', {
+    const response = await pb.send('/backend/v1/lottery/fetch', {
       method: 'POST',
       headers: {
         Authorization: token,
       },
     })
+    if (response && response.success === false) {
+      throw new Error(response.error || 'Falha ao buscar resultados da loteria.')
+    }
+    return response
   } catch (error: any) {
     if (error?.status === 401) {
       pb.authStore.clear()
