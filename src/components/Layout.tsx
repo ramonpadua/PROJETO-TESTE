@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from 'react-router-dom'
-import { Home, FileText, Settings, RefreshCw, PhoneCall, Bot } from 'lucide-react'
+import { Home, FileText, Settings, RefreshCw, PhoneCall, Bot, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Sidebar,
@@ -59,6 +59,14 @@ export default function DashboardLayout() {
                     <Link to="/relatorios">
                       <FileText className="mr-2 h-4 w-4" />
                       <span>Relatórios</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === '/resultados'}>
+                    <Link to="/resultados">
+                      <Trophy className="mr-2 h-4 w-4" />
+                      <span>Resultados Loterias</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -6,6 +6,7 @@ import { DashboardProvider } from '@/contexts/dashboard-context'
 import { AuthProvider, useAuth } from '@/hooks/use-auth'
 import Index from './pages/Index'
 import Relatorios from './pages/Relatorios'
+import Resultados from './pages/Resultados'
 import Chat from './pages/Chat'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
@@ -41,6 +42,7 @@ const App = () => (
             >
               <Route path="/" element={<Index />} />
               <Route path="/relatorios" element={<Relatorios />} />
+              <Route path="/resultados" element={<Resultados />} />
               <Route path="/chat" element={<Chat />} />
               <Route path="/configuracoes" element={<Index />} />
             </Route>
