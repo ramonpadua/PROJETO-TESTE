@@ -15,5 +15,8 @@ export const getLatestLotteryResults = async () => {
 export const triggerLotteryFetch = async () => {
   return await pb.send('/backend/v1/lottery/fetch', {
     method: 'POST',
+    headers: {
+      Authorization: pb.authStore.token,
+    },
   })
 }
